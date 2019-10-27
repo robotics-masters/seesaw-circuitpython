@@ -76,9 +76,9 @@ _ROBOHATMM1_PID = const(9998)
 regs = [0] * 16
 index = 0
 
-led = pulseio.PWMOut(board.D13, frequency=5000, duty_cycle=0)
+led = pulseio.PWMOut(board.SERVO1, frequency=5000, duty_cycle=0)
 
-with I2CSlave(board.SCL, board.SDA, (0x49)) as slave:
+with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
     while True:
         r = slave.request()
         if not r:
@@ -101,9 +101,10 @@ with I2CSlave(board.SCL, board.SDA, (0x49)) as slave:
                             if chip_id != _HW_ID_CODE:
             					raise RuntimeError("Seesaw hardware ID returned (0x{:x}) is not correct! Expected 0x{:x}. Please check your wiring.".format(chip_id, _HW_ID_CODE))
 
-            		elif first_byte = _EEPROM_BASE
+                    elif first_byte == _EEPROM_BASE:
                         ## code goes here
                         second_byte = r.read(1)
+                        
 
                         if second_byte == _EEPROM_I2C_ADDR: ## example pin
                             #  more code required
@@ -113,16 +114,16 @@ with I2CSlave(board.SCL, board.SDA, (0x49)) as slave:
 
                             i2c_addr = self.read8(_EEPROM_BASE, _EEPROM_I2C_ADDR)
 
-                    elif first_byte == _ADC_BASE
+                    elif first_byte == _ADC_BASE:
                         second_byte = r.read(1)
-                        if second_byte == _ADC_CHANNEL_OFFSET + self.pin_mapping.analog_pins.index(pin)
+                        if second_byte == _ADC_CHANNEL_OFFSET + self.pin_mapping.analog_pins.index(pin):
                             n = r.write(bytes([regs[index]]))
                             third_byte = r.read(1)
                             self.read(_ADC_BASE, _ADC_CHANNEL_OFFSET + self.pin_mapping.analog_pins.index(pin), third_byte)
 
-                    elif first_byte == _GPIO_BASE
+                    elif first_byte == _GPIO_BASE:
                         second_byte = r.read(1)
-                        if second_byte == _GPIO_BULK
+                        if second_byte == _GPIO_BULK:
                             n = r.write(bytes([regs[index]]))
                             data = byte(32)
                             counter = 0
@@ -133,7 +134,7 @@ with I2CSlave(board.SCL, board.SDA, (0x49)) as slave:
 
                             self.read(_GPIO_BASE, _GPIO_BULK, data)
 
-                        elif second_byte = _GPIO_BULK_SET
+                        elif second_byte == _GPIO_BULK_SET:
                             n = r.write(bytes([regs[index]]))
                             
 
