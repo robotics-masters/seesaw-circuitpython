@@ -8,6 +8,10 @@ import time
 import digitalio
 from i2cslave import I2CSlave
 
+
+## Enable Debug Output
+DEBUG = True
+
 _STATUS_BASE = const(0x00)
 
 _GPIO_BASE = const(0x01)
@@ -85,28 +89,39 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
             # Maybe do some housekeeping
             continue
         with r:  # Closes the transfer if necessary by sending a NACK or feeding the master dummy bytes
+            if DEBUG: print("request")
             if r.address == 0x49:
                 if not r.is_read:  # Master write which is Slave read
-                    first_byte = r.read(1)
-                    if first_byte == _STATUS_BASE: ## example register
-                        ## code goes here
-                        second_byte = r.read(1)
+                    if DEBUG: print("slave read")
+                    
+                    buffer = r.read(6)
+                    
+                    if len(buffer) < 1:
+                        print("No Data")
+                        continue
+                    
+                    if DEBUG: print("recieved: ", buffer[0])
+                    
+                    if buffer[0] == _STATUS_BASE: ## example register
+                        ## code goes here                        
+                        if DEBUG: print("recieved: ", buffer[1])
 
-                        if second_byte == _STATUS_HW_ID: ## example pin
+                        if buffer[1] == _STATUS_HW_ID: ## example pin
                             #  more code required
                             #  look at the old version of this code to see what regs and index is
-                            n = r.write(bytes([regs[index]]))
-
-                            chip_id = self.read8(_STATUS_BASE, _STATUS_HW_ID)
-                            if chip_id != _HW_ID_CODE:
-            					raise RuntimeError("Seesaw hardware ID returned (0x{:x}) is not correct! Expected 0x{:x}. Please check your wiring.".format(chip_id, _HW_ID_CODE))
-
-                    elif first_byte == _EEPROM_BASE:
-                        ## code goes here
-                        second_byte = r.read(1)
+                            n = r.write(_HW_ID_CODE)
+                  
+                        elif buffer[1] == _STATUS_SWRST:
+                            ## reset board, recieve 0xFF
+                            if buffer[2] == 0xFF:
+                                print("restarting")
+                            ## implement some kind of reset later.
                         
 
-                        if second_byte == _EEPROM_I2C_ADDR: ## example pin
+                    elif buffer[0] == _EEPROM_BASE:
+                        ## code goes here
+
+                        if buffer[1] == _EEPROM_I2C_ADDR: ## example pin
                             #  more code required
                             #  look at the old version of this code to see what regs and index is
                             n = r.write(bytes([regs[index]]))
@@ -114,16 +129,16 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
 
                             i2c_addr = self.read8(_EEPROM_BASE, _EEPROM_I2C_ADDR)
 
-                    elif first_byte == _ADC_BASE:
-                        second_byte = r.read(1)
-                        if second_byte == _ADC_CHANNEL_OFFSET + self.pin_mapping.analog_pins.index(pin):
+                    elif buffer[0] == _ADC_BASE:
+                        buffer[1] = r.read(1)
+                        if buffer[1] == _ADC_CHANNEL_OFFSET + self.pin_mapping.analog_pins.index(pin):
                             n = r.write(bytes([regs[index]]))
                             third_byte = r.read(1)
                             self.read(_ADC_BASE, _ADC_CHANNEL_OFFSET + self.pin_mapping.analog_pins.index(pin), third_byte)
 
-                    elif first_byte == _GPIO_BASE:
-                        second_byte = r.read(1)
-                        if second_byte == _GPIO_BULK:
+                    elif buffer[0] == _GPIO_BASE:
+                        buffer[1] = r.read(1)
+                        if buffer[1] == _GPIO_BULK:
                             n = r.write(bytes([regs[index]]))
                             data = byte(32)
                             counter = 0
@@ -134,7 +149,7 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
 
                             self.read(_GPIO_BASE, _GPIO_BULK, data)
 
-                        elif second_byte == _GPIO_BULK_SET:
+                        elif buffer[1] == _GPIO_BULK_SET:
                             n = r.write(bytes([regs[index]]))
                             
 
@@ -153,8 +168,8 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
                         ## action
 
                     
-                elif r.is_restart:  # Combined transfer: This is the Master read message
-                    n = r.write(bytes([regs[index]]))
+                # elif r.is_restart:  # Combined transfer: This is the Master read message
+                    # n = r.write(bytes([regs[index]]))
                 #else:
                     # A read transfer is not supported in this example
                     # If the Master tries, it will get 0xff byte(s) by the ctx manager (r.close())
