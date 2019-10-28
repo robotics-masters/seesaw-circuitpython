@@ -77,8 +77,22 @@ _EEPROM_I2C_ADDR = const(0x3F)
 _CRICKIT_PID = const(9999)
 _ROBOHATMM1_PID = const(9998)
 
+
+
+## SEESAW REGISTER MAP
+seesawRegs = [0] * 16 # base registers
+
+for reg in seesawRegs:
+    reg = [0] * 16
+
+
+# template registers
 regs = [0] * 16
 index = 0
+
+# Data to send back on next i2cget command. 
+# TODO: implement a proper register map
+data = 0
 
 led = pulseio.PWMOut(board.SERVO1, frequency=5000, duty_cycle=0)
 
@@ -95,55 +109,53 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
                 if not r.is_read:  # Master write which is Slave read
                     if DEBUG: print("slave read")
                     
-                    buffer = r.read(6)
+                    # read in two bytes for moduleBase and moduleFunction
+                    b = r.read(2)
                     
-                    if len(buffer) < 1:
-                        print("No Data")
+                    if len(b) < 1:
+                        print("Error: no data")
                         continue
+                        
+                    # at this point the code should be clean.
+                    #  we set the base and function here.
+                    moduleBase = b[0]
+                    moduleFunc = b[1]
                     
-                    if DEBUG: print("recieved: ", buffer[0])
-                    
-                    if buffer[0] == _STATUS_BASE: ## example register
-                        ## code goes here                        
-                        if DEBUG: print("recieved: ", buffer[1])
-
-                        if buffer[1] == _STATUS_HW_ID: ## example pin
-                            #  more code required
-                            #  look at the old version of this code to see what regs and index is
-                            regs[index] = _HW_ID_CODE
-                            n = r.write(bytes([regs[index]]))
-                            if DEBUG: print("HW_Code ", _HW_ID_CODE)
+                    # 0x00 - Status 
+                    if moduleBase == _STATUS_BASE:
+                        # 0x01 - Hardware ID Code
+                        if moduleFunc == _STATUS_HW_ID:
+                            data = _HW_ID_CODE
+                            continue
                   
-                        elif buffer[1] == _STATUS_SWRST:
+                        elif moduleFunc == _STATUS_SWRST:
                             ## reset board, recieve 0xFF
-                            if buffer[2] == 0xFF:
+                            b = r.read(1)
+                            if b == 0xFF:
                                 print("restarting")
                             ## implement some kind of reset later.
                         
+                    # 0x0D - EEPROM
+                    elif moduleBase == _EEPROM_BASE:
+                        # 0x3F or other
+                        if moduleFunc == _EEPROM_I2C_ADDR: ## example pin
+                            # TODO: implement set function
+                            # b = read(1)
+                            # if b:
+                            #     reg[index][index] = b[0]
+                            pass
 
-                    elif buffer[0] == _EEPROM_BASE:
-                        ## code goes here
+                    # 0x09 - ADC
+                    elif moduleBase == _ADC_BASE:
+                        # TODO: implement moduleFunc 
+                        pass
 
-                        if buffer[1] == _EEPROM_I2C_ADDR: ## example pin
-                            #  more code required
-                            #  look at the old version of this code to see what regs and index is
-                            
-                            n = r.write(bytes([regs[index]]))
-
-
-                            i2c_addr = self.read8(_EEPROM_BASE, _EEPROM_I2C_ADDR)
-
-                    elif buffer[0] == _ADC_BASE:
-                        buffer[1] = r.read(1)
-                        if buffer[1] == _ADC_CHANNEL_OFFSET + self.pin_mapping.analog_pins.index(pin):
-                            n = r.write(bytes([regs[index]]))
-                            third_byte = r.read(1)
-                            self.read(_ADC_BASE, _ADC_CHANNEL_OFFSET + self.pin_mapping.analog_pins.index(pin), third_byte)
-
-                    elif buffer[0] == _GPIO_BASE:
-                        buffer[1] = r.read(1)
-                        if buffer[1] == _GPIO_BULK:
-                            n = r.write(bytes([regs[index]]))
+                    # 0x01 - GPIO
+                    elif moduleBase == _GPIO_BASE:
+                        
+                        #
+                        if moduleFunc == _GPIO_BULK:
+                            #n = r.write(bytes([regs[index]]))
                             data = byte(32)
                             counter = 0
 
@@ -151,30 +163,16 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
                                     data[counter] = pin.value
                                     counter += 1
 
-                            self.read(_GPIO_BASE, _GPIO_BULK, data)
+                            #self.read(_GPIO_BASE, _GPIO_BULK, data)
 
-                        elif buffer[1] == _GPIO_BULK_SET:
-                            n = r.write(bytes([regs[index]]))
-                            
-
-
-
-
-
-
-                
-
-            ## repeat this for all 8 registers, in each register check how many pins
-            ## check what actions each register does 
-                ## if register == 0x08
-                    ## if pin == servo1
-                        ## something with the value
-                        ## action
-
-                    
+                        elif moduleFunc == _GPIO_BULK_SET:
+                            pass
+                         
+         
                 elif r.is_restart:  # Combined transfer: This is the Master read message
                     if DEBUG: print("is_reset")
-                    n = r.write(bytes([regs[index]]))
+                    #n = r.write(bytes([regs[index]]))
+                    n = r.write(bytes([data]))
                 #else:
                     # A read transfer is not supported in this example
                     # If the Master tries, it will get 0xff byte(s) by the ctx manager (r.close())
