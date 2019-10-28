@@ -92,7 +92,7 @@ index = 0
 
 # Data to send back on next i2cget command. 
 # TODO: implement a proper register map
-data = 0
+data = [0] * 16
 
 led = pulseio.PWMOut(board.SERVO1, frequency=5000, duty_cycle=0)
 
@@ -106,13 +106,14 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
             if DEBUG: print("BEGIN request")
             
             if r.address == 0x49:
+                # This is used by i2cset commands (or similar) and sets which register is next to be read from.
                 if not r.is_read:  # Master write which is Slave read
                     if DEBUG: print("slave read")
                     
                     # read in two bytes for moduleBase and moduleFunction
                     b = r.read(2)
                     
-                    if len(b) < 1:
+                    if len(b) < 2:
                         print("Error: no data")
                         continue
                         
@@ -125,13 +126,13 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
                     if moduleBase == _STATUS_BASE:
                         # 0x01 - Hardware ID Code
                         if moduleFunc == _STATUS_HW_ID:
-                            data = _HW_ID_CODE
-                            continue
+                            if DEBUG: print("hardware ID")
+                            data[0] = _HW_ID_CODE
                   
                         elif moduleFunc == _STATUS_SWRST:
                             ## reset board, recieve 0xFF
                             b = r.read(1)
-                            if b == 0xFF:
+                            if b[0] == 0xFF:
                                 print("restarting")
                             ## implement some kind of reset later.
                         
@@ -168,11 +169,17 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
                         elif moduleFunc == _GPIO_BULK_SET:
                             pass
                          
-         
+                # This is used by i2cget commands (or similar) and reads back the register that is set as 
+                #  index.  No read transactions can take place in this section.  Works when given a register.
                 elif r.is_restart:  # Combined transfer: This is the Master read message
-                    if DEBUG: print("is_reset")
+                    if DEBUG: print("combined transfer")
                     #n = r.write(bytes([regs[index]]))
-                    n = r.write(bytes([data]))
-                #else:
-                    # A read transfer is not supported in this example
+                    if DEBUG: print(data)
+                    n = r.write(bytes(data))
+                
+                # This is used by i2cget commands (or similar) and reads back the register that is set as 
+                #  index.  No read transactions can take place in this section.  Works when no register given.
+                else:  # A read transfer
+                    if DEBUG: print("read transfer")
+                    n = r.write(bytes(data))
                     # If the Master tries, it will get 0xff byte(s) by the ctx manager (r.close())
