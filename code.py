@@ -89,7 +89,8 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
             # Maybe do some housekeeping
             continue
         with r:  # Closes the transfer if necessary by sending a NACK or feeding the master dummy bytes
-            if DEBUG: print("request")
+            if DEBUG: print("BEGIN request")
+            
             if r.address == 0x49:
                 if not r.is_read:  # Master write which is Slave read
                     if DEBUG: print("slave read")
@@ -109,7 +110,9 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
                         if buffer[1] == _STATUS_HW_ID: ## example pin
                             #  more code required
                             #  look at the old version of this code to see what regs and index is
-                            n = r.write(_HW_ID_CODE)
+                            regs[index] = _HW_ID_CODE
+                            n = r.write(bytes([regs[index]]))
+                            if DEBUG: print("HW_Code ", _HW_ID_CODE)
                   
                         elif buffer[1] == _STATUS_SWRST:
                             ## reset board, recieve 0xFF
@@ -124,6 +127,7 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
                         if buffer[1] == _EEPROM_I2C_ADDR: ## example pin
                             #  more code required
                             #  look at the old version of this code to see what regs and index is
+                            
                             n = r.write(bytes([regs[index]]))
 
 
@@ -168,8 +172,9 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
                         ## action
 
                     
-                # elif r.is_restart:  # Combined transfer: This is the Master read message
-                    # n = r.write(bytes([regs[index]]))
+                elif r.is_restart:  # Combined transfer: This is the Master read message
+                    if DEBUG: print("is_reset")
+                    n = r.write(bytes([regs[index]]))
                 #else:
                     # A read transfer is not supported in this example
                     # If the Master tries, it will get 0xff byte(s) by the ctx manager (r.close())
