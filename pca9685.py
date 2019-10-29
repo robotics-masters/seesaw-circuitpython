@@ -12,73 +12,6 @@ from i2cslave import I2CSlave
 ## Enable Debug Output
 DEBUG = True
 
-_STATUS_BASE = const(0x00)
-
-_GPIO_BASE = const(0x01)
-_SERCOM0_BASE = const(0x02)
-
-_TIMER_BASE = const(0x08)
-_ADC_BASE = const(0x09)
-_DAC_BASE = const(0x0A)
-_INTERRUPT_BASE = const(0x0B)
-_DAP_BASE = const(0x0C)
-_EEPROM_BASE = const(0x0D)
-_NEOPIXEL_BASE = const(0x0E)
-_TOUCH_BASE = const(0x0F)
-
-_GPIO_DIRSET_BULK = const(0x02)
-_GPIO_DIRCLR_BULK = const(0x03)
-_GPIO_BULK = const(0x04)
-_GPIO_BULK_SET = const(0x05)
-_GPIO_BULK_CLR = const(0x06)
-_GPIO_BULK_TOGGLE = const(0x07)
-_GPIO_INTENSET = const(0x08)
-_GPIO_INTENCLR = const(0x09)
-_GPIO_INTFLAG = const(0x0A)
-_GPIO_PULLENSET = const(0x0B)
-_GPIO_PULLENCLR = const(0x0C)
-
-_STATUS_HW_ID = const(0x01)
-_STATUS_VERSION = const(0x02)
-_STATUS_OPTIONS = const(0x03)
-_STATUS_TEMP = const(0x04)
-_STATUS_SWRST = const(0x7F)
-
-_TIMER_STATUS = const(0x00)
-_TIMER_PWM = const(0x01)
-_TIMER_FREQ = const(0x02)
-
-_ADC_STATUS = const(0x00)
-_ADC_INTEN = const(0x02)
-_ADC_INTENCLR = const(0x03)
-_ADC_WINMODE = const(0x04)
-_ADC_WINTHRESH = const(0x05)
-_ADC_CHANNEL_OFFSET = const(0x07)
-
-_SERCOM_STATUS = const(0x00)
-_SERCOM_INTEN = const(0x02)
-_SERCOM_INTENCLR = const(0x03)
-_SERCOM_BAUD = const(0x04)
-_SERCOM_DATA = const(0x05)
-
-_NEOPIXEL_STATUS = const(0x00)
-_NEOPIXEL_PIN = const(0x01)
-_NEOPIXEL_SPEED = const(0x02)
-_NEOPIXEL_BUF_LENGTH = const(0x03)
-_NEOPIXEL_BUF = const(0x04)
-_NEOPIXEL_SHOW = const(0x05)
-
-_TOUCH_CHANNEL_OFFSET = const(0x10)
-
-_HW_ID_CODE = const(0x55)
-_EEPROM_I2C_ADDR = const(0x3F)
-
-#TODO: update when we get real PID
-_CRICKIT_PID = const(9999)
-_ROBOHATMM1_PID = const(9998)
-
-
-
 ## SEESAW REGISTER MAP
 seesawRegs = [0] * 16 # base registers
 
@@ -96,7 +29,7 @@ data = [0] * 16
 
 led = pulseio.PWMOut(board.SERVO1, frequency=5000, duty_cycle=0)
 
-with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
+with I2CSlave(board.SCL, board.SDA, [0x40]) as slave:
     while True:
         r = slave.request()
         if not r:
@@ -105,7 +38,7 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
         with r:  # Closes the transfer if necessary by sending a NACK or feeding the master dummy bytes
             if DEBUG: print("BEGIN request")
             
-            if r.address == 0x49:
+            if r.address == 0x40:
                 # This is used by i2cset commands (or similar) and sets which register is next to be read from.
                 if not r.is_read:  # Master write which is Slave read
                     if DEBUG: print("slave read")
