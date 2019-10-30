@@ -50,7 +50,7 @@ with I2CSlave(board.SCL, board.SDA, (0x40)) as slave:
                 #  index.  No read transactions can take place in this section.
                 elif r.is_restart:  # Combined transfer: This is the Master read message
                     if DEBUG: print("combined transfer")
-                    if DEBUG: print("returned: ', regs[index])
+                    if DEBUG: print("returned: ", regs[index])
                     n = r.write(bytes([regs[index]]))
                 #else:
                     # A read transfer is not supported in this example
