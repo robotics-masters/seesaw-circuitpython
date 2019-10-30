@@ -11,7 +11,7 @@ index = 0
 DEBUG = True
 
 
-with I2CSlave(board.SCL, board.SDA, (0x40)) as slave:
+with I2CSlave(board.SCL, board.SDA, (0x40, 0x42)) as slave:
     while True:
         r = slave.request()
         if not r:
