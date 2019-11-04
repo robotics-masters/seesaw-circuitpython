@@ -12,6 +12,11 @@ from i2cslave import I2CSlave
 ## Enable Debug Output
 DEBUG = True
 
+
+
+## DEFAULT CONFIG (similar to seesaw board_config.h)
+
+
 _STATUS_BASE = const(0x00)
 
 _GPIO_BASE = const(0x01)
@@ -82,9 +87,10 @@ _ROBOHATMM1_PID = const(9998)
 ## SEESAW REGISTER MAP
 seesawRegs = [0] * 16 # base registers
 
-for reg in seesawRegs:
-    reg = [0] * 16
 
+
+# Neopixel Register
+register_neopixel = [0] * 6
 
 # template registers
 regs = [0] * 16
@@ -101,6 +107,8 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
         r = slave.request()
         if not r:
             # Maybe do some housekeeping
+            # TODO:  Working functions in here for keeping things going like NeoPixels, etc
+            
             continue
         with r:  # Closes the transfer if necessary by sending a NACK or feeding the master dummy bytes
             if DEBUG: print("BEGIN request")
@@ -154,10 +162,15 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
                     # 0x01 - GPIO
                     elif moduleBase == _GPIO_BASE:
                         
-                        #
+                        # 0x04 - GPIO (R/W)
                         if moduleFunc == _GPIO_BULK:
                             #n = r.write(bytes([regs[index]]))
-                            data = byte(32)
+                            data = byte(4)
+
+                            if len(data) < 5:
+                                print("error: not enough values")
+                                continue
+                            
                             counter = 0
 
                             for pin in pins:
@@ -168,6 +181,52 @@ with I2CSlave(board.SCL, board.SDA, [0x49]) as slave:
 
                         elif moduleFunc == _GPIO_BULK_SET:
                             pass
+
+                    # 0x0E - NeoPixel
+                    elif moduleBase == _NEOPIXEL_BASE:
+                        # 0x01 - Pin
+                        if moduleFunc == _NEOPIXEL_PIN:
+                            b = r.read(1)
+                            if len(b) < 1:
+                                if DEBUG: print("no pin provided")
+                                continue
+                            register_neopixel[moduleFunc] = b[0]
+
+                        # 0x02 - Speed
+                        elif moduleFunc == _NEOPIXEL_SPEED:
+                            b = r.read(1)
+                            if len(b) < 1:
+                                if DEBUG: print("no speed provided")
+                                continue
+                            register_neopixel[moduleFunc] = b[0]
+
+                        # 0x03 - Buffer Length
+                        elif moduleFunc == _NEOPIXEL_BUF_LENGTH:
+                            b = r.read(2)
+                            if len(b) < 2:
+                                if DEBUG: print("no length provided")
+                                continue
+                            register_neopixel[moduleFunc] = b[0:1]
+
+                        # 0x04 - Data Buffer
+                        elif moduleFunc == _NEOPIXEL_BUF:
+                            b = r.read(32)
+                            if len(b) < 2:
+                                if DEBUG: print("packet not long enough")
+                                continue
+                            register_neopixel[moduleFunc] = b
+
+                        # 0x05 - Show
+                        elif moduleFunc == _NEOPIXEL_SHOW:
+                            b = r.read(1)
+                            if len(b) < 2:
+                                if DEBUG: print("not set")
+                                continue
+                            register_neopixel[moduleFunc] = b[0]
+                            if b[0] == 0x01:
+                                pass
+                                
+                        
                          
                 # This is used by i2cget commands (or similar) and reads back the register that is set as 
                 #  index.  No read transactions can take place in this section.  Works when given a register.
