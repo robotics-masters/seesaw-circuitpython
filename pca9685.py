@@ -43,65 +43,18 @@ with I2CSlave(board.SCL, board.SDA, [0x40]) as slave:
                 if not r.is_read:  # Master write which is Slave read
                     if DEBUG: print("slave read")
                     
-                    # read in two bytes for moduleBase and moduleFunction
-                    b = r.read(2)
+                    # read in one byte
+                    b = r.read(1)
                     
-                    if len(b) < 2:
+                    if len(b) < 1:
                         print("Error: no data")
                         continue
                         
                     # at this point the code should be clean.
                     #  we set the base and function here.
                     moduleBase = b[0]
-                    moduleFunc = b[1]
                     
-                    # 0x00 - Status 
-                    if moduleBase == _STATUS_BASE:
-                        # 0x01 - Hardware ID Code
-                        if moduleFunc == _STATUS_HW_ID:
-                            if DEBUG: print("hardware ID")
-                            data[0] = _HW_ID_CODE
-                  
-                        elif moduleFunc == _STATUS_SWRST:
-                            ## reset board, recieve 0xFF
-                            b = r.read(1)
-                            if b[0] == 0xFF:
-                                print("restarting")
-                            ## implement some kind of reset later.
-                        
-                    # 0x0D - EEPROM
-                    elif moduleBase == _EEPROM_BASE:
-                        # 0x3F or other
-                        if moduleFunc == _EEPROM_I2C_ADDR: ## example pin
-                            # TODO: implement set function
-                            # b = read(1)
-                            # if b:
-                            #     reg[index][index] = b[0]
-                            pass
-
-                    # 0x09 - ADC
-                    elif moduleBase == _ADC_BASE:
-                        # TODO: implement moduleFunc 
-                        pass
-
-                    # 0x01 - GPIO
-                    elif moduleBase == _GPIO_BASE:
-                        
-                        #
-                        if moduleFunc == _GPIO_BULK:
-                            #n = r.write(bytes([regs[index]]))
-                            data = byte(32)
-                            counter = 0
-
-                            for pin in pins:
-                                    data[counter] = pin.value
-                                    counter += 1
-
-                            #self.read(_GPIO_BASE, _GPIO_BULK, data)
-
-                        elif moduleFunc == _GPIO_BULK_SET:
-                            pass
-                         
+                                             
                 # This is used by i2cget commands (or similar) and reads back the register that is set as 
                 #  index.  No read transactions can take place in this section.  Works when given a register.
                 elif r.is_restart:  # Combined transfer: This is the Master read message
