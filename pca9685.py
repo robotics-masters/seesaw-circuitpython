@@ -10,7 +10,7 @@ from i2cslave import I2CSlave
 
 
 ## Enable Debug Output
-DEBUG = True
+DEBUG = False
 
 # template registers
 regs = [0] * 255
@@ -29,14 +29,14 @@ for i in range(0, 15):
     PWM_START_ADDRESS.append(addr)
 
 # setup servos - have to do manually because CircuitPython doesn't understand timer free
-servo3 = pulseio.PWMOut(board.SERVO3, frequency=50, duty_cycle=2 ** 12)
-servo1 = pulseio.PWMOut(board.SERVO1, frequency=50, duty_cycle=2 ** 12)
-servo2 = pulseio.PWMOut(board.SERVO2, frequency=50, duty_cycle=2 ** 12)
-servo4 = pulseio.PWMOut(board.SERVO4, frequency=50, duty_cycle=2 ** 12)
-servo5 = pulseio.PWMOut(board.SERVO5, frequency=50, duty_cycle=2 ** 12)
-servo6 = pulseio.PWMOut(board.SERVO6, frequency=50, duty_cycle=2 ** 12)
-servo7 = pulseio.PWMOut(board.SERVO7, frequency=50, duty_cycle=2 ** 12)
-servo8 = pulseio.PWMOut(board.SERVO8, frequency=50, duty_cycle=2 ** 12)
+servo3 = pulseio.PWMOut(board.SERVO3, frequency=60, duty_cycle=2 ** 12)
+servo1 = pulseio.PWMOut(board.SERVO1, frequency=60, duty_cycle=2 ** 12)
+servo2 = pulseio.PWMOut(board.SERVO2, frequency=60, duty_cycle=2 ** 12)
+servo4 = pulseio.PWMOut(board.SERVO4, frequency=60, duty_cycle=2 ** 12)
+servo5 = pulseio.PWMOut(board.SERVO5, frequency=60, duty_cycle=2 ** 12)
+servo6 = pulseio.PWMOut(board.SERVO6, frequency=60, duty_cycle=2 ** 12)
+servo7 = pulseio.PWMOut(board.SERVO7, frequency=60, duty_cycle=2 ** 12)
+servo8 = pulseio.PWMOut(board.SERVO8, frequency=60, duty_cycle=2 ** 12)
 
 servos.append(servo1)
 servos.append(servo2)
@@ -51,9 +51,26 @@ def read_register(base, size):
     ret = ""
     for i in range(0, size):
         ret = ret + "{:02x}".format(regs[base + i])
+    return ret
 
-    print(ret)
+def servo_address(base):
+    servo_index = 0
+    for addr in PWM_START_ADDRESS:
+        if addr == base:
+            return servo_index
+        servo_index += 1
+    return -1
 
+def set_servo(base):
+    addr = servo_address(base)
+    servo = servos[addr]
+
+    # calculate value
+    strrepr = read_register(base, 2)
+    value = int(strrepr.encode("hex"), 16)
+    
+    servo.duty_cycle = value
+    
 
 # Data to send back on next i2cget command. 
 # TODO: implement a proper register map
@@ -90,9 +107,9 @@ with I2CSlave(board.SCL, board.SDA, [0x40]) as slave:
                     index = moduleBase
 
                     if DEBUG: print("base: 0x{:02x}".format(moduleBase))
-                    print("all data: ", b)
-                    for element in b:
-                        print("0x{:02x}".format(element))
+                    #print("all data: ", b)
+                    #for element in b:
+                    #    print("0x{:02x}".format(element))
                     
                         
                     # We have a register address.  We need to decide what to do next.
@@ -129,7 +146,8 @@ with I2CSlave(board.SCL, board.SDA, [0x40]) as slave:
                         regs[moduleBase + 2] = int(b[2])
                         regs[moduleBase + 3] = int(b[1])
 
-                        
+                        # set servo
+                        set_servo(moduleBase)
 
                         
                     
