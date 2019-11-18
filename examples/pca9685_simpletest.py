@@ -3,6 +3,8 @@
 
 from board import SCL, SDA
 import busio
+from time import sleep
+
 
 # Import the PCA9685 module.
 from adafruit_pca9685 import PCA9685
@@ -21,4 +23,7 @@ pca.frequency = 60
 # Set the PWM duty cycle for channel zero to 50%. duty_cycle is 16 bits to match other PWM objects
 # but the PCA9685 will only actually give 12 bits of resolution.
 print("channel 0 duty cycle")
-pca.channels[2].duty_cycle = 55555 
+
+for i in range(0, 65536, 364):
+    pca.channels[0].duty_cycle = i 
+    sleep(0.1)
