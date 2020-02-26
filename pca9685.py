@@ -1,6 +1,6 @@
-## CircuitPython
-##  An implementation of SeeSaw in CircuitPython
 ##
+## A software implementation of the PCA9685 in CircuitPython
+##  for demonstrating the functionality of a I2CSlave
 ##
 import board
 import pulseio
@@ -148,10 +148,7 @@ with I2CSlave(board.SCL, board.SDA, [0x40]) as slave:
 
                         # set servo
                         set_servo(moduleBase)
-
                         
-                    
-                                             
                 # This is used by i2cget commands (or similar) and reads back the register that is set as 
                 #  index.  No read transactions can take place in this section.  Works when given a register.
                 elif r.is_restart:  # Combined transfer: This is the Master read message
